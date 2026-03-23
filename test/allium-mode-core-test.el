@@ -168,5 +168,186 @@
              (lambda (node _with-properties) (format "name-from-%s" node))))
     (should (equal (allium--treesit-defun-name 'fake-node) "name-from-name"))))
 
+;;; --- Indentation with v3 constructs ---
+
+(ert-deftest allium-mode-indents-transition-block ()
+  "Transition block edges should indent inside the braces."
+  (allium-test-load-mode)
+  (with-temp-buffer
+    (insert "transitions status {\ndraft -> active\nactive -> closed\n}\n")
+    (allium-mode)
+    (indent-region (point-min) (point-max))
+    (should (equal (buffer-string)
+                   (concat
+                    "transitions status {\n"
+                    "    draft -> active\n"
+                    "    active -> closed\n"
+                    "}\n")))))
+
+(ert-deftest allium-mode-indents-for-block-body ()
+  "Body of a `for x in items:` should not change indent (no braces)."
+  (allium-test-load-mode)
+  (with-temp-buffer
+    (insert "rule A {\nfor x in items:\nprocess(x)\n}\n")
+    (allium-mode)
+    (indent-region (point-min) (point-max))
+    (should (equal (buffer-string)
+                   (concat
+                    "rule A {\n"
+                    "    for x in items:\n"
+                    "    process(x)\n"
+                    "}\n")))))
+
+(ert-deftest allium-mode-indents-if-block-body ()
+  "Body following `if condition:` stays at the same level (no braces)."
+  (allium-test-load-mode)
+  (with-temp-buffer
+    (insert "rule A {\nif active:\ndo_thing()\n}\n")
+    (allium-mode)
+    (indent-region (point-min) (point-max))
+    (should (equal (buffer-string)
+                   (concat
+                    "rule A {\n"
+                    "    if active:\n"
+                    "    do_thing()\n"
+                    "}\n")))))
+
+(ert-deftest allium-mode-indents-nested-blocks ()
+  "An entity containing a transition block should indent both levels."
+  (allium-test-load-mode)
+  (with-temp-buffer
+    (insert "entity Ticket {\nid: String\ntransitions status {\ndraft -> active\n}\n}\n")
+    (allium-mode)
+    (let ((indent-tabs-mode nil))
+      (indent-region (point-min) (point-max)))
+    (should (equal (buffer-string)
+                   (concat
+                    "entity Ticket {\n"
+                    "    id: String\n"
+                    "    transitions status {\n"
+                    "        draft -> active\n"
+                    "    }\n"
+                    "}\n")))))
+
+;;; --- Font-lock for v3 keywords ---
+
+(ert-deftest allium-mode-fontifies-v3-keywords ()
+  "v3 keywords should receive keyword face via regex font-lock."
+  (allium-test-load-mode)
+  (dolist (kw '("for" "in" "if" "else" "where" "with" "exists" "transitions" "terminal"))
+    (with-temp-buffer
+      (insert (concat kw " something\n"))
+      (allium-mode)
+      (font-lock-ensure)
+      (goto-char (point-min))
+      (search-forward kw)
+      (should (eq (get-text-property (1- (point)) 'face) 'font-lock-keyword-face)))))
+
+(ert-deftest allium-mode-fontifies-backtick-literals ()
+  "Backtick-delimited literals should get string face."
+  (allium-test-load-mode)
+  (with-temp-buffer
+    (insert "`hello world`\n")
+    (allium-mode)
+    (font-lock-ensure)
+    (goto-char (point-min))
+    (search-forward "hello")
+    (should (eq (get-text-property (1- (point)) 'face) 'font-lock-string-face))))
+
+(ert-deftest allium-mode-fontifies-context-clause-keyword ()
+  "`context:` should receive keyword face as a clause keyword."
+  (allium-test-load-mode)
+  (with-temp-buffer
+    (insert "context: SomeCtx\n")
+    (allium-mode)
+    (font-lock-ensure)
+    (goto-char (point-min))
+    (search-forward "context:")
+    ;; The colon-bearing clause keyword regex highlights up to the colon.
+    ;; Check that the "t" in "context" (just before the colon) has keyword face.
+    (should (eq (get-text-property (- (point) 2) 'face) 'font-lock-keyword-face))))
+
+;;; --- Comment handling ---
+
+(ert-deftest allium-mode-comment-region-inserts-double-dash ()
+  "`comment-region` should prepend `-- ` to each line."
+  (allium-test-load-mode)
+  (with-temp-buffer
+    (insert "alpha\nbeta\n")
+    (allium-mode)
+    (comment-region (point-min) (point-max))
+    (should (string-match-p "^-- alpha" (buffer-string)))
+    (should (string-match-p "^-- beta" (buffer-string)))))
+
+(ert-deftest allium-mode-uncomment-region-removes-double-dash ()
+  "`uncomment-region` should strip `-- ` prefixes."
+  (allium-test-load-mode)
+  (with-temp-buffer
+    (insert "-- alpha\n-- beta\n")
+    (allium-mode)
+    (uncomment-region (point-min) (point-max))
+    (should (equal (buffer-string) "alpha\nbeta\n"))))
+
+(ert-deftest allium-mode-comment-syntax-in-multiline-block ()
+  "A `--` comment inside a block body should be recognised as a comment."
+  (allium-test-load-mode)
+  (with-temp-buffer
+    (insert "rule A {\n  -- a comment\n  when: Trigger()\n}\n")
+    (allium-mode)
+    (goto-char (point-min))
+    (search-forward "a comment")
+    (should (nth 4 (syntax-ppss)))))
+
+;;; --- Defun navigation ---
+
+(ert-deftest allium-mode-defun-type-regexp-matches-all-declaration-types ()
+  "The defun type regexp should match every expected declaration node type."
+  (allium-test-load-mode)
+  (let ((expected '("rule_declaration"
+                    "entity_declaration"
+                    "external_entity_declaration"
+                    "value_declaration"
+                    "enum_declaration"
+                    "surface_declaration"
+                    "actor_declaration"
+                    "config_block"
+                    "default_declaration"
+                    "variant_declaration"
+                    "contract_declaration"
+                    "invariant_declaration")))
+    (dolist (type expected)
+      (should (string-match-p allium--treesit-defun-type-regexp type)))))
+
+(ert-deftest allium-mode-defun-type-regexp-rejects-non-declaration-types ()
+  "The defun type regexp should not match non-declaration node types."
+  (allium-test-load-mode)
+  (let ((non-types '("comment"
+                     "field_assignment"
+                     "identifier"
+                     "string_literal"
+                     "clause_keyword"
+                     "for_block"
+                     "transition_block")))
+    (dolist (type non-types)
+      (should-not (string-match-p allium--treesit-defun-type-regexp type)))))
+
+;;; --- Imenu settings ---
+
+(ert-deftest allium-mode-imenu-settings-cover-expected-categories ()
+  "Imenu settings should include entries for all expected declaration categories."
+  (allium-test-load-mode)
+  (let ((categories (mapcar #'car allium--treesit-imenu-settings)))
+    (dolist (cat '("Rule" "Entity" "Value" "Enum" "Config" "Contract" "Invariant"))
+      (should (member cat categories)))))
+
+(ert-deftest allium-mode-imenu-settings-entity-matches-both-entity-types ()
+  "The Entity imenu entry should match both entity and external_entity declarations."
+  (allium-test-load-mode)
+  (let* ((entity-entry (cl-find "Entity" allium--treesit-imenu-settings
+                                :key #'car :test #'equal))
+         (pattern (nth 1 entity-entry)))
+    (should (string-match-p pattern "entity_declaration"))
+    (should (string-match-p pattern "external_entity_declaration"))))
+
 (provide 'allium-mode-core-test)
 ;;; allium-mode-core-test.el ends here
