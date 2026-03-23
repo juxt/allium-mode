@@ -1,6 +1,6 @@
 ;;; allium-mode.el --- Major mode for Allium specifications  -*- lexical-binding: t; -*-
 
-;; Version: 0.2.0
+;; Version: 0.3.0
 ;; Author: JUXT
 ;; Keywords: languages, allium
 ;; Package-Requires: ((emacs "28.1"))
@@ -38,18 +38,22 @@
 (defvar allium-font-lock-keywords
   (let* ((keywords '("module" "use" "as" "rule" "entity" "external" "value" "enum"
                      "context" "config" "surface" "actor" "default" "variant"
-                     "let" "not" "and" "or" "contract" "invariant" "implies"))
+                     "let" "not" "and" "or" "contract" "invariant" "implies"
+                     "deferred" "given" "for" "in" "if" "else"
+                     "where" "with" "exists" "transitions" "terminal"))
          (keyword-regexp (regexp-opt keywords 'symbols))
          (clause-keywords '("when" "requires" "ensures" "trigger" "provides" "tags"
                             "guidance" "becomes" "related" "exposes"
                             "identified_by" "contracts" "demands" "fulfils"
                             "guarantee" "timeout" "within" "transitions_to"
-                            "facing"))
+                            "facing" "context"))
          (clause-regexp (concat "\\_<" (regexp-opt clause-keywords) ":")))
     `((,keyword-regexp . font-lock-keyword-face)
       (,clause-regexp . font-lock-keyword-face)
       ("\\_<\\(true\\|false\\|null\\)\\_>" . font-lock-constant-face)
       ("\\_<[0-9]+\\(\\.[0-9]+\\)?\\(?:\\.\\(?:seconds\\|minutes\\|hours\\|days\\)\\)?\\_>" . font-lock-constant-face)
+      ;; Backtick literals
+      ("`[^`]*`" . font-lock-string-face)
       ;; Declarations: kind Name
       (,(concat "\\_<" (regexp-opt '("rule" "entity" "value" "enum" "surface" "actor" "variant" "contract" "invariant") 'symbols)
                 "\\s-+\\([A-Za-z_][A-Za-z0-9_]*\\)")
@@ -104,6 +108,8 @@
         "module" "use" "as" "rule" "entity" "external" "value" "enum"
         "context" "config" "surface" "actor" "default" "variant"
         "let" "not" "and" "or" "contract" "invariant" "implies"
+        "deferred" "given" "for" "in" "if" "else"
+        "where" "with" "exists" "when" "transitions" "terminal"
        ] @font-lock-keyword-face
        (clause_keyword) @font-lock-keyword-face
        (annotation_keyword) @font-lock-keyword-face)
@@ -120,13 +126,17 @@
        (default_declaration type: (identifier) @font-lock-type-face)
        (variant_declaration name: (identifier) @font-lock-type-face)
        (contract_declaration name: (identifier) @font-lock-type-face)
-       (invariant_declaration name: (identifier) @font-lock-type-face))
+       (invariant_declaration name: (identifier) @font-lock-type-face)
+       (invariant_block name: (identifier) @font-lock-type-face))
 
      :language 'allium
      :feature 'variable
      '((field_assignment key: (identifier) @font-lock-variable-name-face)
        (let_binding name: (identifier) @font-lock-variable-name-face)
-       (named_argument name: (identifier) @font-lock-variable-name-face))
+       (named_argument name: (identifier) @font-lock-variable-name-face)
+       (for_block binding: (identifier) @font-lock-variable-name-face)
+       (for_expression binding: (identifier) @font-lock-variable-name-face)
+       (transition_block field: (identifier) @font-lock-variable-name-face))
 
      :language 'allium
      :feature 'function
@@ -149,7 +159,8 @@
      '((boolean_literal) @font-lock-constant-face
        (null_literal) @font-lock-constant-face
        (number_literal) @font-lock-constant-face
-       (duration_literal) @font-lock-constant-face)
+       (duration_literal) @font-lock-constant-face
+       (backtick_literal) @font-lock-string-face)
 
      :language 'allium
      :feature 'operator

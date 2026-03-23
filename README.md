@@ -2,7 +2,7 @@
 
 Emacs major mode for the [Allium](https://github.com/juxt/allium-tools) specification language.
 
-**Compatibility:** Allium Tools core 2.x
+**Compatibility:** Allium Tools core 3.x
 
 ## Installation
 
