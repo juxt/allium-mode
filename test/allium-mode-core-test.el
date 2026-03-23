@@ -156,7 +156,6 @@
   "allium--treesit-defun-name should map anonymous block node types to labels."
   (allium-test-load-mode)
   (cl-letf (((symbol-function 'treesit-node-type) (lambda (node) node)))
-    (should (equal (allium--treesit-defun-name "context_block") "context"))
     (should (equal (allium--treesit-defun-name "config_block") "config"))))
 
 (ert-deftest allium-treesit-defun-name-reads-declaration-name-field ()

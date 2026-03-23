@@ -181,7 +181,6 @@
           "enum_declaration"
           "surface_declaration"
           "actor_declaration"
-          "context_block"
           "config_block"
           "default_declaration"
           "variant_declaration"
@@ -198,7 +197,6 @@
      (treesit-node-text (treesit-node-child-by-field-name node "name") t))
     ("default_declaration"
      (treesit-node-text (treesit-node-child-by-field-name node "name") t))
-    ("context_block" "context")
     ("config_block" "config")))
 
 (defvar allium--treesit-imenu-settings
@@ -207,7 +205,6 @@
     ("Value" "\\`value_declaration\\'" nil nil)
     ("Enum" "\\`enum_declaration\\'" nil nil)
     ("Config" "\\`config_block\\'" nil nil)
-    ("Context" "\\`context_block\\'" nil nil)
     ("Contract" "\\`contract_declaration\\'" nil nil)
     ("Invariant" "\\`invariant_declaration\\'" nil nil)))
 
