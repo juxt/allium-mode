@@ -1,4 +1,4 @@
-;;; allium-mode-test-helpers.el --- Shared helpers for allium-mode tests -*- lexical-binding: t; -*-
+;;; allium-mode-test-helpers.el --- Shared helpers for allium-mode tests -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;;; Commentary:
 

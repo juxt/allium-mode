@@ -1,4 +1,4 @@
-;;; allium-mode-core-test.el --- Core tests for allium-mode -*- lexical-binding: t; -*-
+;;; allium-mode-core-test.el --- Core tests for allium-mode -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;;; Commentary:
 

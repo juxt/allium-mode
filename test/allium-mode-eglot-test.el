@@ -1,4 +1,4 @@
-;;; allium-mode-eglot-test.el --- eglot integration tests for allium-mode -*- lexical-binding: t; -*-
+;;; allium-mode-eglot-test.el --- eglot integration tests for allium-mode -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;;; Commentary:
 

@@ -1,4 +1,4 @@
-;;; allium-mode-integration-test.el --- Integration tests for allium-mode -*- lexical-binding: t; -*-
+;;; allium-mode-integration-test.el --- Integration tests for allium-mode -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;;; Commentary:
 

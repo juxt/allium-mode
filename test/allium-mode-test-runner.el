@@ -1,4 +1,4 @@
-;;; allium-mode-test-runner.el --- Batch ERT runner for allium-mode -*- lexical-binding: t; -*-
+;;; allium-mode-test-runner.el --- Batch ERT runner for allium-mode -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;;; Commentary:
 

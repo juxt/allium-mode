@@ -1,4 +1,4 @@
-;;; allium-mode-lsp-mode-test.el --- lsp-mode integration tests for allium-mode -*- lexical-binding: t; -*-
+;;; allium-mode-lsp-mode-test.el --- lsp-mode integration tests for allium-mode -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;;; Commentary:
 

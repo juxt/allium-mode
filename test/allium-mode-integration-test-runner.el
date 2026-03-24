@@ -1,4 +1,4 @@
-;;; allium-mode-integration-test-runner.el --- Batch integration runner -*- lexical-binding: t; -*-
+;;; allium-mode-integration-test-runner.el --- Batch integration runner -*- lexical-binding: t; no-byte-compile: t; -*-
 
 ;;; Commentary:
 
