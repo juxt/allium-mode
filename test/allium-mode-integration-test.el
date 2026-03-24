@@ -86,33 +86,6 @@
    (lambda (_file)
      (should (eglot-managed-p)))))
 
-(ert-deftest allium-ts-mode-eglot-integration-connects-to-real-server ()
-  "eglot should also manage `allium-ts-mode` buffers."
-  (unless (require 'eglot nil t)
-    (ert-skip "eglot is unavailable in this Emacs build"))
-  (unless (file-exists-p allium-test--lsp-bin)
-    (ert-skip "allium-lsp binary is missing; run package build first"))
-  (allium-test-load-mode t)
-  (let ((server-command (list "node" allium-test--lsp-bin "--stdio")))
-    (setf (alist-get 'allium-ts-mode eglot-server-programs) server-command)
-    (allium-test--with-temp-allium-file
-     "rule Ping {\n  when: Trigger()\n  ensures: Done()\n}\n"
-     (lambda (file)
-       (let ((buf (find-file-noselect file)))
-         (unwind-protect
-             (with-current-buffer buf
-               (allium-ts-mode)
-               (eglot-ensure)
-               (run-hooks 'post-command-hook)
-               (should (allium-test--wait-until #'eglot-current-server 10))
-               (should (eglot-managed-p)))
-           (when (buffer-live-p buf)
-             (with-current-buffer buf
-               (when (fboundp 'eglot-shutdown)
-                 (ignore-errors (eglot-shutdown (eglot-current-server))))
-               (set-buffer-modified-p nil))
-             (kill-buffer buf))))))))
-
 (ert-deftest allium-mode-lsp-mode-integration-connects-to-real-server ()
   "lsp-mode starts a real allium-lsp process for an allium buffer when available."
   (unless (require 'lsp-mode nil t)

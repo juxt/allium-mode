@@ -20,8 +20,6 @@
       (progn
         (allium-test-load-mode t)
         (should (equal (alist-get 'allium-mode eglot-server-programs)
-                       '("allium-lsp" "--stdio")))
-        (should (equal (alist-get 'allium-ts-mode eglot-server-programs)
                        '("allium-lsp" "--stdio"))))
     (allium-test-reset-environment)))
 

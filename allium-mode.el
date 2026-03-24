@@ -25,6 +25,15 @@
   :type '(repeat string)
   :group 'allium)
 
+(defcustom allium-treesit-reminder t
+  "When non-nil, show a reminder if tree-sitter is available but the grammar is not.
+Set to nil to suppress the message."
+  :type 'boolean
+  :group 'allium)
+
+(defvar allium--treesit-reminded nil
+  "Non-nil if the tree-sitter grammar reminder has been shown this session.")
+
 (defvar allium-mode-syntax-table
   (let ((st (make-syntax-table)))
     ;; Comments: -- to end of line
@@ -210,43 +219,48 @@
 
 ;;;###autoload
 (define-derived-mode allium-mode prog-mode "Allium"
-  "Major mode for editing Allium specifications."
+  "Major mode for editing Allium specifications.
+Uses tree-sitter for font-lock and navigation when the Allium
+grammar is available (Emacs 29+), otherwise falls back to
+regex-based highlighting."
   :syntax-table allium-mode-syntax-table
   (setq-local comment-start "-- ")
   (setq-local comment-end "")
   (setq-local font-lock-defaults '(allium-font-lock-keywords))
-  (setq-local indent-line-function 'allium-indent-line))
-
-;;;###autoload
-(define-derived-mode allium-ts-mode allium-mode "Allium[TS]"
-  "Major mode for editing Allium specifications using tree-sitter."
-  :syntax-table allium-mode-syntax-table
-  (when (and (fboundp 'treesit-parser-create)
-             (condition-case nil
-                 (progn
-                   (treesit-parser-create 'allium)
-                   t)
-               (error nil)))
-    (setq-local treesit-font-lock-settings allium--treesit-font-lock-rules)
-    (setq-local treesit-font-lock-feature-list
-                '((comment definition)
-                  (keyword variable function)
-                  (string constant operator)
-                  (punctuation)))
-    (setq-local treesit-defun-type-regexp allium--treesit-defun-type-regexp)
-    (setq-local treesit-defun-name-function #'allium--treesit-defun-name)
-    (setq-local treesit-simple-imenu-settings allium--treesit-imenu-settings)
-    (when (fboundp 'treesit-major-mode-setup)
-      (treesit-major-mode-setup))))
+  (setq-local indent-line-function 'allium-indent-line)
+  (if (and (fboundp 'treesit-parser-create)
+           (condition-case nil
+               (progn
+                 (treesit-parser-create 'allium)
+                 t)
+             (error nil)))
+      (progn
+        (setq-local mode-name "Allium[TS]")
+        (setq-local treesit-font-lock-settings allium--treesit-font-lock-rules)
+        (setq-local treesit-font-lock-feature-list
+                    '((comment definition)
+                      (keyword variable function)
+                      (string constant operator)
+                      (punctuation)))
+        (setq-local treesit-defun-type-regexp allium--treesit-defun-type-regexp)
+        (setq-local treesit-defun-name-function #'allium--treesit-defun-name)
+        (setq-local treesit-simple-imenu-settings allium--treesit-imenu-settings)
+        (when (fboundp 'treesit-major-mode-setup)
+          (treesit-major-mode-setup)))
+    (when (and allium-treesit-reminder
+               (not allium--treesit-reminded)
+               (fboundp 'treesit-parser-create))
+      (setq allium--treesit-reminded t)
+      (message (concat "allium-mode: tree-sitter support is available but the Allium grammar is not installed. "
+                       "See https://github.com/juxt/tree-sitter-allium for build instructions. "
+                       "Set `allium-treesit-reminder' to nil to suppress this message.")))))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.allium\\'" . allium-mode))
 
 (with-eval-after-load 'eglot
   (add-to-list 'eglot-server-programs
-               `(allium-mode . ,allium-lsp-server-command))
-  (add-to-list 'eglot-server-programs
-               `(allium-ts-mode . ,allium-lsp-server-command)))
+               `(allium-mode . ,allium-lsp-server-command)))
 
 (defvar lsp-language-id-configuration)
 (declare-function lsp-stdio-connection "ext:lsp-mode")
@@ -255,10 +269,9 @@
 
 (with-eval-after-load 'lsp-mode
   (add-to-list 'lsp-language-id-configuration '(allium-mode . "allium"))
-  (add-to-list 'lsp-language-id-configuration '(allium-ts-mode . "allium"))
   (lsp-register-client
    (make-lsp-client :new-connection (lsp-stdio-connection (lambda () allium-lsp-server-command))
-                    :major-modes '(allium-mode allium-ts-mode)
+                    :major-modes '(allium-mode)
                     :priority 0
                     :server-id 'allium-lsp
                     :language-id "allium")))

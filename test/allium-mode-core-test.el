@@ -84,15 +84,8 @@
     (search-forward "ensures:")
     (should (eq (get-text-property (- (point) 2) 'face) 'font-lock-keyword-face))))
 
-(ert-deftest allium-ts-mode-is-selectable-without-grammar-install ()
-  "allium-ts-mode should still activate even if grammar is unavailable."
-  (allium-test-load-mode)
-  (with-temp-buffer
-    (allium-ts-mode)
-    (should (eq major-mode 'allium-ts-mode))))
-
-(ert-deftest allium-ts-mode-configures-treesit-when-grammar-is-ready ()
-  "allium-ts-mode should configure tree-sitter locals when parser can be created."
+(ert-deftest allium-mode-configures-treesit-when-grammar-is-ready ()
+  "allium-mode should configure tree-sitter locals when parser can be created."
   (allium-test-load-mode)
   (let (parser-language setup-called)
     (cl-letf (((symbol-function 'treesit-parser-create)
@@ -100,7 +93,7 @@
               ((symbol-function 'treesit-major-mode-setup)
                (lambda () (setq setup-called t))))
       (with-temp-buffer
-        (allium-ts-mode)
+        (allium-mode)
         (should (eq parser-language 'allium))
         (should (equal treesit-font-lock-settings allium--treesit-font-lock-rules))
         (should (equal treesit-defun-type-regexp allium--treesit-defun-type-regexp))
@@ -108,8 +101,8 @@
         (should (equal treesit-simple-imenu-settings allium--treesit-imenu-settings))
         (should setup-called)))))
 
-(ert-deftest allium-ts-mode-skips-treesit-setup-when-parser-creation-fails ()
-  "allium-ts-mode should stay active even when parser creation signals an error."
+(ert-deftest allium-mode-skips-treesit-setup-when-parser-creation-fails ()
+  "allium-mode should fall back to regex font-lock when parser creation fails."
   (allium-test-load-mode)
   (let (setup-called)
     (cl-letf (((symbol-function 'treesit-parser-create)
@@ -117,40 +110,41 @@
               ((symbol-function 'treesit-major-mode-setup)
                (lambda () (setq setup-called t))))
       (with-temp-buffer
-        (allium-ts-mode)
-        (should (eq major-mode 'allium-ts-mode))
+        (allium-mode)
+        (should (eq major-mode 'allium-mode))
         (should-not (local-variable-p 'treesit-font-lock-settings))
         (should-not setup-called)))))
 
-(ert-deftest allium-ts-mode-imenu-lists-top-level-declarations-with-repo-grammar ()
-  "With the repo grammar built, imenu should include top-level declaration names."
+(ert-deftest allium-mode-imenu-settings-wired-when-treesit-active ()
+  "When tree-sitter activates, imenu settings should match all declaration node types."
   (allium-test-load-mode)
-  (unless (and (file-directory-p allium-test--treesit-lib-dir)
-               (fboundp 'treesit-parser-create))
-    (ert-skip "tree-sitter parser setup unavailable"))
-  (unless (fboundp 'treesit-major-mode-setup)
-    (ert-skip "treesit major-mode imenu wiring unavailable in this Emacs build"))
-  (with-temp-buffer
-    (insert "entity Ticket {\n  id: String\n}\n\nrule Close {\n  when: Trigger()\n  ensures: Done()\n}\n")
-    (allium-ts-mode)
-    (let ((index (imenu--make-index-alist t)))
-      (should (string-match-p "Ticket" (format "%S" index)))
-      (should (string-match-p "Close" (format "%S" index))))))
+  (cl-letf (((symbol-function 'treesit-parser-create)
+             (lambda (_lang) nil))
+            ((symbol-function 'treesit-major-mode-setup)
+             (lambda () nil)))
+    (with-temp-buffer
+      (allium-mode)
+      (let ((settings treesit-simple-imenu-settings))
+        (should settings)
+        ;; Every expected declaration node type should be matched by at least one entry.
+        (dolist (node-type '("rule_declaration" "entity_declaration"
+                             "external_entity_declaration" "value_declaration"
+                             "enum_declaration" "config_block"
+                             "contract_declaration" "invariant_declaration"))
+          (should (cl-some (lambda (entry)
+                             (string-match-p (nth 1 entry) node-type))
+                           settings)))))))
 
-(ert-deftest allium-ts-mode-uses-real-tree-sitter-grammar-when-installed ()
-  "When grammar artifacts exist, Emacs should create an allium parser from them."
+(ert-deftest allium-mode-sets-ts-mode-name-when-grammar-available ()
+  "When tree-sitter parser creation succeeds, mode-name should be Allium[TS]."
   (allium-test-load-mode)
-  (unless (file-directory-p allium-test--treesit-lib-dir)
-    (ert-skip "local tree-sitter grammar directory is unavailable"))
-  (unless (fboundp 'treesit-parser-create)
-    (ert-skip "tree-sitter parser APIs are unavailable in this Emacs build"))
-  (with-temp-buffer
-    (insert "rule A {\n  when: Trigger()\n  ensures: Done()\n}\n")
-    (allium-mode)
-    (should-not (condition-case nil
-                    (progn (treesit-parser-create 'allium) nil)
-                  (error t)))
-    (should (> (length (treesit-parser-list)) 0))))
+  (cl-letf (((symbol-function 'treesit-parser-create)
+             (lambda (_lang) nil))
+            ((symbol-function 'treesit-major-mode-setup)
+             (lambda () nil)))
+    (with-temp-buffer
+      (allium-mode)
+      (should (equal mode-name "Allium[TS]")))))
 
 (ert-deftest allium-treesit-defun-name-supports-context-and-config-nodes ()
   "allium--treesit-defun-name should map anonymous block node types to labels."
@@ -548,13 +542,6 @@
 
 ;;; --- Mode setup ---
 
-(ert-deftest allium-ts-mode-derives-from-allium-mode ()
-  "allium-ts-mode should be a child of allium-mode."
-  (allium-test-load-mode)
-  (with-temp-buffer
-    (allium-ts-mode)
-    (should (derived-mode-p 'allium-mode))))
-
 (ert-deftest allium-mode-derives-from-prog-mode ()
   "allium-mode should be a child of prog-mode."
   (allium-test-load-mode)
@@ -574,20 +561,19 @@
 
 ;;; --- LSP registration completeness ---
 
-(ert-deftest allium-mode-eglot-registers-both-modes ()
-  "eglot registration should cover allium-mode and allium-ts-mode."
+(ert-deftest allium-mode-eglot-registers-mode ()
+  "eglot registration should cover allium-mode."
   (allium-test-reset-environment)
   (setq eglot-server-programs nil)
   (provide 'eglot)
   (unwind-protect
       (progn
         (allium-test-load-mode t)
-        (should (alist-get 'allium-mode eglot-server-programs))
-        (should (alist-get 'allium-ts-mode eglot-server-programs)))
+        (should (alist-get 'allium-mode eglot-server-programs)))
     (allium-test-reset-environment)))
 
-(ert-deftest allium-mode-lsp-mode-registers-both-modes ()
-  "lsp-mode language-id configuration should cover allium-mode and allium-ts-mode."
+(ert-deftest allium-mode-lsp-mode-registers-mode ()
+  "lsp-mode language-id configuration should cover allium-mode."
   (allium-test-reset-environment)
   (let (registered-client)
     (cl-letf (((symbol-function 'lsp-register-client)
@@ -600,8 +586,7 @@
       (unwind-protect
           (progn
             (allium-test-load-mode t)
-            (should (equal (alist-get 'allium-mode lsp-language-id-configuration) "allium"))
-            (should (equal (alist-get 'allium-ts-mode lsp-language-id-configuration) "allium")))
+            (should (equal (alist-get 'allium-mode lsp-language-id-configuration) "allium")))
         (allium-test-reset-environment)))))
 
 (ert-deftest allium-mode-lsp-mode-language-id-is-allium ()
@@ -621,7 +606,7 @@
             (should registered-client)
             (should (equal (plist-get registered-client :language-id) "allium"))
             (should (equal (plist-get registered-client :major-modes)
-                           '(allium-mode allium-ts-mode))))
+                           '(allium-mode))))
         (allium-test-reset-environment)))))
 
 (provide 'allium-mode-core-test)

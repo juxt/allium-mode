@@ -21,7 +21,7 @@ Emacs major mode for the [Allium](https://github.com/juxt/allium-tools) specific
 ```elisp
 (use-package allium-mode
   :straight (:host github :repo "juxt/allium-mode")
-  :mode "\.allium'")
+  :mode "\\.allium\\'")
 ```
 
 ### Using Doom Emacs
@@ -37,7 +37,7 @@ In `config.el`:
 
 ```elisp
 (use-package! allium-mode
-  :mode "\.allium'")
+  :mode "\\.allium\\'")
 ```
 
 ### Manual installation
@@ -66,13 +66,36 @@ After opening an `.allium` file and connecting LSP (`eglot-ensure` or
 - Rename symbol: `M-x eglot-rename` or `M-x lsp-rename`
 - Code actions: `M-x eglot-code-actions` or `M-x lsp-execute-code-action`
 - Format buffer: `M-x eglot-format-buffer` or `M-x lsp-format-buffer`
-- Outline navigation: `M-x imenu` (with richer structure in `allium-ts-mode`)
+- Outline navigation: `M-x imenu` (richer structure when tree-sitter is available)
 
 Built-in mode commands and variables:
 
-- Switch modes: `M-x allium-mode` / `M-x allium-ts-mode`
 - Indentation width: customise `allium-indent-offset`
 - LSP server command: customise `allium-lsp-server-command`
+
+## Tree-sitter grammar (optional)
+
+On Emacs 29+, `allium-mode` automatically uses tree-sitter when the Allium grammar is installed, giving you more accurate highlighting and richer imenu navigation. Without the grammar, the mode falls back to regex-based highlighting.
+
+To compile and install the grammar:
+
+```
+M-x treesit-install-language-grammar RET allium RET
+```
+
+When prompted for the repository URL, enter:
+
+```
+https://github.com/juxt/tree-sitter-allium
+```
+
+Accept the defaults for the remaining prompts. This compiles the grammar and installs the shared library into your `tree-sitter` directory. You need a C compiler available on your system (`cc`).
+
+To suppress the startup reminder if you prefer regex highlighting, add to your config:
+
+```elisp
+(setq allium-treesit-reminder nil)
+```
 
 ## LSP configuration
 
