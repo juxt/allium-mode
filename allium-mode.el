@@ -67,7 +67,7 @@
 (defun allium-indent-line ()
   "Indent current line of Allium code."
   (interactive)
-  (let ((savep (point-at-eol))
+  (let ((savep (line-end-position))
         (indent (condition-case nil
                     (save-excursion
                       (back-to-indentation)
@@ -247,6 +247,11 @@
                `(allium-mode . ,allium-lsp-server-command))
   (add-to-list 'eglot-server-programs
                `(allium-ts-mode . ,allium-lsp-server-command)))
+
+(defvar lsp-language-id-configuration)
+(declare-function lsp-stdio-connection "ext:lsp-mode")
+(declare-function lsp-register-client "ext:lsp-mode")
+(declare-function make-lsp-client "ext:lsp-mode")
 
 (with-eval-after-load 'lsp-mode
   (add-to-list 'lsp-language-id-configuration '(allium-mode . "allium"))

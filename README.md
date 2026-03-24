@@ -6,6 +6,16 @@ Emacs major mode for the [Allium](https://github.com/juxt/allium-tools) specific
 
 ## Installation
 
+### Using package-vc (Emacs 29+)
+
+```elisp
+(unless (package-installed-p 'allium-mode)
+  (package-vc-install '(allium-mode :url "https://github.com/juxt/allium-mode")))
+
+(use-package allium-mode
+  :mode "\\.allium\\'")
+```
+
 ### Using straight.el
 
 ```elisp
