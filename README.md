@@ -10,8 +10,7 @@ Emacs major mode for the [Allium](https://github.com/juxt/allium-tools) specific
 
 ```elisp
 (unless (package-installed-p 'allium-mode)
-  (let ((inhibit-message t))
-    (package-vc-install '(allium-mode :url "https://github.com/juxt/allium-mode"))))
+  (package-vc-install '(allium-mode :url "https://github.com/juxt/allium-mode")))
 
 (use-package allium-mode
   :mode "\\.allium\\'")
