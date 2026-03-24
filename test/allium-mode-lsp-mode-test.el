@@ -8,7 +8,7 @@
 
 (require 'ert)
 (require 'cl-lib)
-(require 'allium-mode-test-helpers)
+(load (expand-file-name "allium-mode-test-helpers" (file-name-directory (or load-file-name buffer-file-name))) nil 'nomessage)
 
 (defvar lsp-language-id-configuration nil)
 

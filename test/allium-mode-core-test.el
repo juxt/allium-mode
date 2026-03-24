@@ -9,7 +9,7 @@
 (require 'ert)
 (require 'cl-lib)
 (require 'imenu)
-(require 'allium-mode-test-helpers)
+(load (expand-file-name "allium-mode-test-helpers" (file-name-directory (or load-file-name buffer-file-name))) nil 'nomessage)
 
 (ert-deftest allium-mode-sets-core-buffer-locals ()
   "allium-mode configures expected editor-local defaults."

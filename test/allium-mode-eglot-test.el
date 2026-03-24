@@ -7,7 +7,7 @@
 ;;; Code:
 
 (require 'ert)
-(require 'allium-mode-test-helpers)
+(load (expand-file-name "allium-mode-test-helpers" (file-name-directory (or load-file-name buffer-file-name))) nil 'nomessage)
 
 (defvar eglot-server-programs nil)
 

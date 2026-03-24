@@ -26,7 +26,7 @@
   :group 'allium)
 
 (defcustom allium-treesit-reminder t
-  "When non-nil, show a reminder if tree-sitter is available but the grammar is not.
+  "Show a reminder when tree-sitter is available but the grammar is not.
 Set to nil to suppress the message."
   :type 'boolean
   :group 'allium)
