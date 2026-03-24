@@ -10,7 +10,7 @@ Emacs major mode for the [Allium](https://github.com/juxt/allium-tools) specific
 
 ```elisp
 (unless (package-installed-p 'allium-mode)
-  (let ((byte-compile-warnings nil))
+  (let ((warning-minimum-level :error))
     (package-vc-install '(allium-mode :url "https://github.com/juxt/allium-mode"))))
 
 (use-package allium-mode
