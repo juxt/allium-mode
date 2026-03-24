@@ -99,11 +99,17 @@ To suppress the startup reminder if you prefer regex highlighting, add to your c
 
 ## LSP configuration
 
+LSP features require the `allium-lsp` server on your PATH. Download a
+pre-built binary from [allium-tools releases](https://github.com/juxt/allium-tools/releases),
+or build from source (see `docs/editors/emacs.md` in the allium-tools repo).
+
 ### eglot
 
 ```elisp
-(add-hook 'allium-mode-hook 'eglot-ensure)
+(add-hook 'allium-mode-hook 'allium-eglot-ensure)
 ```
+
+`allium-eglot-ensure` checks that the server is installed before connecting. If `allium-lsp` is not on your PATH, it shows install instructions instead of a generic eglot error.
 
 ### lsp-mode
 

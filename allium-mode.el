@@ -258,6 +258,19 @@ regex-based highlighting."
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.allium\\'" . allium-mode))
 
+(declare-function eglot-ensure "ext:eglot")
+
+(defun allium-eglot-ensure ()
+  "Start eglot for the current buffer if the Allium LSP server is available.
+If the server command cannot be found, display install instructions
+instead of letting eglot fail with a generic error."
+  (if (executable-find (car allium-lsp-server-command))
+      (eglot-ensure)
+    (message (concat "allium-mode: %s not found. "
+                     "Download from https://github.com/juxt/allium-tools/releases "
+                     "or build from source (see docs/editors/emacs.md in allium-tools).")
+             (car allium-lsp-server-command))))
+
 (with-eval-after-load 'eglot
   (add-to-list 'eglot-server-programs
                `(allium-mode . ,allium-lsp-server-command)))
